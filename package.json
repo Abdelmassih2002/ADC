@@ -4,8 +4,8 @@
   "description": "graduate project",
   "main": "app.js",
   "scripts": {
-    "start": "nodemon server.js",
-    "dev": "nodemon server.js"
+    "start": "server.js",
+    "dev": "server.js"
   },
   "author": "Amr Ismail",
   "license": "ISC",
