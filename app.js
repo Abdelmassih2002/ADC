@@ -7,10 +7,7 @@ app.use(express.json())
 app.get('/',(req,res)=>{
     res.send("Hello World!");
 })
-app.post('/signup', userRouter);
-app.post('/login', userRouter);
-app.get('/logout', userRouter)
-app.post('/forgotPassword',userRouter)
-app.patch('/resetpassword/:token',userRouter)
+app.use(userRouter);
+
 
 module.exports = app;

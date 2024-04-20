@@ -4,8 +4,8 @@
   "description": "graduate project",
   "main": "app.js",
   "scripts": {
-    "start": "node server.js",
-    "dev": "node server.js"
+    "start": "nodemon server.js",
+    "dev": "nodemon server.js"
   },
   "author": "Amr Ismail",
   "license": "ISC",
@@ -20,7 +20,12 @@
     "firebase": "^10.8.1",
     "firebase-admin": "^12.0.0",
     "jsonwebtoken": "^9.0.2",
-    "nodemailer": "^6.9.12"
+    "nodemailer": "^6.9.12",
+    "passport": "^0.7.0",
+    "passport-google-oauth20": "^2.0.0"
+  },
+  "devDependencies": {
+    "nodemon": "^3.1.0"
   },
   "keywords": []
 }
