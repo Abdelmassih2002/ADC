@@ -14,13 +14,13 @@ function printBloodGlucoseValueForLoggedInUser() {
   readingsRef.where('user_id', '==', userId).get()
     .then((querySnapshot) => {
       if (querySnapshot.empty) {
-        console.log(`No reading found for user ${userId}`);
+        console.log(No reading found for user ${userId});
         return;
       }
       
       querySnapshot.forEach((doc) => {
         const readingData = doc.data();
-        console.log(`Blood Glucose Value for user ${userId}: ${readingData.blood_glucose_value}`);
+        console.log(Blood Glucose Value for user ${userId}: ${readingData.blood_glucose_value});
       });
     })
     .catch((error) => {
@@ -131,11 +131,11 @@ exports.logout = (req, res) => {
               passwordResetToken: resetToken,
               passwordResetExpires: Date.now() + 10 * 60 * 1000
           });
-          const resetURL = `${req.protocol}://${req.get('host')}/resetPassword/${resetToken}`;
+          const resetURL = ${req.protocol}://${req.get('host')}/resetPassword/${resetToken};
           await sendEmail({
               email: req.body.email,
               subject: 'Your password reset token (valid for 10 min)',
-              message: `Forgot your password? Submit a PATCH req with your new pass to: ${resetURL}. If you didn't forget, ignore this email.`
+              message: Forgot your password? Submit a PATCH req with your new pass to: ${resetURL}. If you didn't forget, ignore this email.
           });     
           res.status(200).json({
               status: 'success',
@@ -202,10 +202,8 @@ exports.userInfo = catchAsync(async (req, res, next) => {
     }
     try {
         const decodedToken = jwt.verify(token,  process.env.JWT_SECRET);
-        console.log(decodedToken)
-        const userEmail = decodedToken.data[0];
-        console.log('User email:', userEmail);
-
+        const userEmail = decodedToken.data[0]
+        const allData = decodedToken.data
         await db.collection('users').doc(userEmail).update({
             firstName,
             lastName,
@@ -214,10 +212,8 @@ exports.userInfo = catchAsync(async (req, res, next) => {
             weight,
             height
         });
-
-        return res.status(200).json({
-            message: 'User info updated successfully'
-        });
+        res.send('User info updated successfully')
+        createSendToken(allData, 200, req, res);   
     } catch (error) {
         console.error('Error updating user info:', error);
         return res.status(500).json({
@@ -225,5 +221,3 @@ exports.userInfo = catchAsync(async (req, res, next) => {
         });
     }
 });
-
-
