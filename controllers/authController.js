@@ -193,7 +193,7 @@ const updateReading = (req,res)=>{
 
 exports.userInfo = catchAsync(async (req, res, next) => {
     const { firstName, lastName, age, gender, weight, height } = req.body;
-    const token = req.headers.authorization.split(' ')[1];
+    const token = req.body.token;
 
     if (!(firstName && lastName && age && gender && height && weight)) {
         return res.status(400).json({
