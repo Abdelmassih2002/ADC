@@ -192,10 +192,10 @@ const updateReading = (req,res)=>{
 }
 
 exports.userInfo = catchAsync(async (req, res, next) => {
-    const { firstName, lastName, age, gender, weight, height } = req.body;
+    const { firstName, lastName, age, weight, height } = req.body;
     const token = req.body.token;
 
-    if (!(firstName && lastName && age && gender && height && weight)) {
+    if (!(firstName && lastName && age && height && weight)) {
         return res.status(400).json({
             error: 'All fields must be filled'
         });
