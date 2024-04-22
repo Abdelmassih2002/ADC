@@ -208,7 +208,6 @@ exports.userInfo = catchAsync(async (req, res, next) => {
             firstName,
             lastName,
             age,
-            gender,
             weight,
             height
         });
