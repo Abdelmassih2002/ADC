@@ -34,7 +34,7 @@ function signToken (...data){
 })
 }
 const createSendToken = (user, statusCode, req, res) => {
-    const token = signToken(user.email, user.firstName,user.lastName,user.phoneNumber,user.weight,user.height);
+    const token = signToken(user.email, user.firstName,user.lastName,user.gender,user.phoneNumber,user.weight,user.height,user.age);
 
     user.password = undefined;
     console.log(user)
@@ -192,10 +192,10 @@ const updateReading = (req,res)=>{
 }
 
 exports.userInfo = catchAsync(async (req, res, next) => {
-    const { firstName, lastName, age, weight, height } = req.body;
+    const { firstName, lastName, age, gender, weight, height } = req.body;
     const token = req.body.token;
-
-    if (!(firstName && lastName && age && height && weight)) {
+    console.log(token)
+    if (!(firstName && lastName && age && gender && weight && height)) {
         return res.status(400).json({
             error: 'All fields must be filled'
         });
@@ -204,15 +204,17 @@ exports.userInfo = catchAsync(async (req, res, next) => {
         const decodedToken = jwt.verify(token,  process.env.JWT_SECRET);
         const userEmail = decodedToken.data[0]
         const allData = decodedToken.data
+         console.log(allData)
         await db.collection('users').doc(userEmail).update({
             firstName,
             lastName,
             age,
+            gender,
             weight,
             height
         });
         res.send('User info updated successfully')
-        createSendToken(allData, 200, req, res);   
+        createSendToken(allData, 200, req, res);  
     } catch (error) {
         console.error('Error updating user info:', error);
         return res.status(500).json({
