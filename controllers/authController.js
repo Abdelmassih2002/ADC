@@ -251,10 +251,10 @@ exports.userInfo = catchAsync(async (req, res, next) => {
 
 
 exports.updateInfo = catchAsync(async (req, res, next) => {
-  const { firstName, lastName, gender, email, phoneNumber, weight, height } = req.body;
+  const { firstName, lastName, gender, phoneNumber, weight, height } = req.body;
   const token = req.body.token;
   console.log(token);
-  if (!(firstName && lastName && gender && email && phoneNumber && weight && height)) {
+  if (!(firstName && lastName && gender && phoneNumber && weight && height)) {
     return res.status(400).json({
       error: "All fields must be filled",
     });
@@ -268,7 +268,6 @@ exports.updateInfo = catchAsync(async (req, res, next) => {
       firstName,
       lastName,
       gender,
-      email,
       phoneNumber,
       weight,
       height,
