@@ -4,6 +4,7 @@ const router = express.Router();
 
 
 router.patch('/userinfo' ,authController.userInfo)
+router.patch('/updateinfo' ,authController.updateInfo)
 router.post('/signup', authController.signup);
 router.post('/login', authController.login)
 router.get('/logout', authController.logout)
