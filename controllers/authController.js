@@ -253,12 +253,7 @@ exports.userInfo = catchAsync(async (req, res, next) => {
 exports.updateInfo = catchAsync(async (req, res, next) => {
   const { firstName, lastName, gender, phoneNumber, weight, height } = req.body;
   const token = req.body.token;
-  console.log(token);
-  if (!(firstName && lastName && gender && phoneNumber && weight && height)) {
-    return res.status(400).json({
-      error: "All fields must be filled",
-    });
-  }
+  console.log(token);
   try {
     const decodedToken = jwt.verify(token, process.env.JWT_SECRET);
     const userEmail = decodedToken.data[0];
