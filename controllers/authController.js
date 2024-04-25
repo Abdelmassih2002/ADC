@@ -289,9 +289,6 @@ exports.updateInfo = catchAsync(async (req, res, next) => {
       height,
     });
 
-    // Send response with updated user info
-    res.send("User info updated successfully");
-
     // Create and send a new token with updated data
     createSendToken(updatedData, 200, req, res);
   } catch (error) {
