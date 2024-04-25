@@ -76,6 +76,7 @@ const createSendToken = (user, statusCode, req, res) => {
     status: "success",
     token,
   });
+  return token;
 };
 
 exports.signup = catchAsync(async (req, res, next) => {
@@ -277,19 +278,20 @@ exports.updateInfo = catchAsync(async (req, res, next) => {
     // Verify and decode the token to get user email
     const decodedToken = jwt.verify(token, process.env.JWT_SECRET);
     const userEmail = decodedToken.data[0];
-    const updatedData = decodedToken.data;
-
-    // Update user info in the database
-    await db.collection("users").doc(userEmail).update({
+    const updatedData = {
+      email: userEmail, // Include the email in updated data
       firstName,
       lastName,
       gender,
       phoneNumber,
       weight,
       height,
-    });
+    };
 
-    // Create and send a new token with updated data
+    // Update user info in the database
+    await db.collection("users").doc(userEmail).update(updatedData);
+
+    // Refresh token with updated user data
     createSendToken(updatedData, 200, req, res);
   } catch (error) {
     console.error("Error updating user info:", error);
