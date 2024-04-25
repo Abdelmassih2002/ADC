@@ -76,7 +76,6 @@ const createSendToken = (user, statusCode, req, res) => {
     status: "success",
     token,
   });
-  return token;
 };
 
 exports.signup = catchAsync(async (req, res, next) => {
