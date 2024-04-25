@@ -242,25 +242,31 @@ const updateReading = (req, res) => {
 exports.userInfo = catchAsync(async (req, res, next) => {
   const { firstName, lastName, age, gender, weight, height } = req.body;
   const token = req.body.token;
-  console.log(token);
+
   if (!(firstName && lastName && age && gender && weight && height)) {
     return res.status(400).json({
       error: "All fields must be filled",
     });
   }
+
   try {
+    // Verify and decode the token to get user email and other data
     const decodedToken = jwt.verify(token, process.env.JWT_SECRET);
     const userEmail = decodedToken.data[0];
-    const allData = decodedToken.data;
-    await db.collection("users").doc(userEmail).update({
+    const allData = {
+      email: userEmail, // Include the email in updated data
       firstName,
       lastName,
       age,
       gender,
       weight,
       height,
-    });
-    res.send("User info updated successfully");
+    };
+
+    // Update user info in the database
+    await db.collection("users").doc(userEmail).update(allData);
+
+    // Send the token with updated user data
     createSendToken(allData, 200, req, res);
   } catch (error) {
     console.error("Error updating user info:", error);
@@ -278,19 +284,20 @@ exports.updateInfo = catchAsync(async (req, res, next) => {
     // Verify and decode the token to get user email
     const decodedToken = jwt.verify(token, process.env.JWT_SECRET);
     const userEmail = decodedToken.data[0];
-    const updatedData = decodedToken.data;
-
-    // Update user info in the database
-    await db.collection("users").doc(userEmail).update({
+    const updatedData = {
+      email: userEmail, // Include the email in updated data
       firstName,
       lastName,
       gender,
       phoneNumber,
       weight,
       height,
-    });
+    };
 
-    // Create and send a new token with updated data
+    // Update user info in the database
+    await db.collection("users").doc(userEmail).update(updatedData);
+
+    // Refresh token with updated user data
     createSendToken(updatedData, 200, req, res);
   } catch (error) {
     console.error("Error updating user info:", error);
