@@ -223,21 +223,24 @@ const updateReading = (req, res) => {
     .on("value", (snapshot) => {
       const bloodGlucoseValue = snapshot.val();
       const readingDocRef = firestore.collection("readings").doc(userId);
+
+      // Use Firestore's "update" method to add a new field with the new reading
       readingDocRef
         .update({
-          blood_glucose_value: bloodGlucoseValue,
+          [`reading_${Date.now()}`]: bloodGlucoseValue,
         })
         .then(() => {
-          console.log("Blood glucose value updated successfully in Firestore");
+          console.log("Blood glucose value added successfully in Firestore");
         })
         .catch((error) => {
           console.error(
-            "Error updating blood glucose value in Firestore:",
+            "Error adding blood glucose value in Firestore:",
             error
           );
         });
     });
 };
+
 
 exports.userInfo = catchAsync(async (req, res, next) => {
   const { firstName, lastName, age, gender, weight, height } = req.body;
