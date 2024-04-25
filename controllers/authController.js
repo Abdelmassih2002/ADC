@@ -290,7 +290,7 @@ exports.updateInfo = catchAsync(async (req, res, next) => {
     });
 
     // Create and send a new token with updated data
-    createSendToken(updatedData, 200, req, res);
+    createSendToken(userData, 200, req, res);
   } catch (error) {
     console.error("Error updating user info:", error);
     return res.status(500).json({
