@@ -22,7 +22,8 @@
     "jsonwebtoken": "^9.0.2",
     "nodemailer": "^6.9.12",
     "passport": "^0.7.0",
-    "passport-google-oauth20": "^2.0.0"
+    "passport-google-oauth20": "^2.0.0",
+    "firebase-functions": "^4.9.0"
   },
   "devDependencies": {
     "nodemon": "^3.1.0"
