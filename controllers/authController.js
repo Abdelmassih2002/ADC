@@ -6,56 +6,15 @@ const jwt = require("jsonwebtoken");
 const AppError = require(".././utils/appError");
 const catchAsync = require(".././utils/catchAsync");
 const sendEmail = require("./../utils/Email");
+const functions = require('firebase-functions');
+let counter = 1;
 
-function printBloodGlucoseValueForLoggedInUser() {
-  const userId = userData.email; // Replace 'user_id' with the actual user ID
-  const readingsRef = db.collection("readings");
-  // Query for the reading document for the specified user ID
-  readingsRef
-    .where("user_id", "==", userId)
-    .get()
-    .then((querySnapshot) => {
-      if (querySnapshot.empty) {
-        console.log(`No reading found for user ${userId}`);
-        return;
-      }
 
-      querySnapshot.forEach((doc) => {
-        const readingData = doc.data();
-        console.log(
-          `Blood Glucose Value for user ${userId}: ${readingData.blood_glucose_value}`
-        );
-      });
-    })
-    .catch((error) => {
-      console.error("Error getting reading:", error);
-    });
-}
 function signToken(...data) {
   return jwt.sign({ data }, process.env.JWT_SECRET, {
     expiresIn: process.env.JWT_EXPIRES_IN,
   });
 }
-// const createSendToken = (user, statusCode, req, res) => {
-//   const token = signToken(
-//     user.email,
-//     user.firstName,
-//     user.lastName,
-//     user.gender,
-//     user.phoneNumber,
-//     user.weight,
-//     user.height,
-//     user.age
-//   );
-
-//   user.password = undefined;
-//   console.log(user);
-//   res.status(statusCode).json({
-//     status: "success",
-//     token,
-//   });
-//   return token;
-// };
 
 const createSendToken = (user, statusCode, req, res) => {
   const token = signToken(
@@ -68,9 +27,7 @@ const createSendToken = (user, statusCode, req, res) => {
     user.height,
     user.age
   );
-
   user.password = undefined;
-
   // Send the token along with the response
   res.status(statusCode).json({
     status: "success",
@@ -104,10 +61,7 @@ exports.signup = catchAsync(async (req, res, next) => {
       password: hashedPassword,
       phoneNumber,
     });
-    await db.collection("readings").doc(email).set({
-      user_id: email,
-      blood_glucose_value: 0,
-    });
+    await db.collection("readings").doc(email).set({});
     createSendToken(data, 200, req, res);
   } catch (error) {
     console.error("Error during signup:", error);
@@ -135,12 +89,68 @@ exports.login = catchAsync(async (req, res, next) => {
     }
     console.log("Login successfully");
     createSendToken(userData, 200, req, res);
-    printBloodGlucoseValueForLoggedInUser();
+    // Call updateReading immediately
     updateReading();
   } catch (err) {
     return next(new AppError("Authentication failed", 500));
   }
 });
+
+// Define counter globally outside the function
+
+// Increment counter function
+const updateReading = () => {
+  const userId = userData.email;
+
+  // Listen for changes in the Firebase Realtime Database
+  admin
+    .database()
+    .ref("/test/int")
+    .on("value", (snapshot) => {
+      const bloodGlucoseValue =parseInt( snapshot.val());
+
+      // Update Firestore only when data changes
+      const fieldKey = "Reading " + counter;
+      const readingDocRef = firestore.collection("readings").doc(userId);
+      readingDocRef
+        .update({
+          [fieldKey]: bloodGlucoseValue,
+        })
+        .then(() => {
+          console.log("Blood glucose value updated successfully in Firestore");
+          incrementCounter();
+        })
+        .catch((error) => {
+          console.error("Error updating blood glucose value in Firestore:", error);
+        });
+    });
+};
+const incrementCounter = () => {
+  counter++;
+  if (counter === 13) {
+    const userId = userData.email;
+    const readingDocRef = firestore.collection("readings").doc(userId);
+    const newDocRef = firestore.collection("readingGraph").doc(userId);
+
+    // Get the data from readings collection
+    readingDocRef.get().then((doc) => {
+      if (doc.exists) {
+        // Move data to readingGraph collection
+        newDocRef.set(doc.data()).then(() => {
+          console.log("Data moved to readingGraph collection");
+        }).catch((error) => {
+          console.error("Error moving data to readingGraph collection:", error);
+        });
+      } else {
+        console.log("No data found in readings collection");
+      }
+    }).catch((error) => {
+      console.error("Error getting document:", error);
+    });
+    // Reset counter
+    counter = 1;
+  }
+};
 
 exports.logout = (req, res) => {
   res.cookie("jwt", "loggedout", {
@@ -214,30 +224,6 @@ exports.resetPassword = catchAsync(async (req, res, next) => {
   createSendToken(user, 200, req, res);
 });
 
-const updateReading = (req, res) => {
-  const userId = userData.email;
-  admin
-    .database()
-    .ref("/test/int")
-    .on("value", (snapshot) => {
-      const bloodGlucoseValue = snapshot.val();
-      const readingDocRef = firestore.collection("readings").doc(userId);
-      readingDocRef
-        .update({
-          blood_glucose_value: bloodGlucoseValue,
-        })
-        .then(() => {
-          console.log("Blood glucose value updated successfully in Firestore");
-        })
-        .catch((error) => {
-          console.error(
-            "Error updating blood glucose value in Firestore:",
-            error
-          );
-        });
-    });
-};
-
 exports.userInfo = catchAsync(async (req, res, next) => {
   const { firstName, lastName, age, gender, weight, height } = req.body;
   const token = req.body.token;
@@ -306,30 +292,3 @@ exports.updateInfo = catchAsync(async (req, res, next) => {
   }
 });
 
-
-// exports.updateInfo = catchAsync(async (req, res, next) => {
-//   const { firstName, lastName, gender, phoneNumber, weight, height } = req.body;
-//   const token = req.body.token;
-//   console.log(token);
-//   try {
-//     const decodedToken = jwt.verify(token, process.env.JWT_SECRET);
-//     const userEmail = decodedToken.data[0];
-//     const updatedData = decodedToken.data;
-//     console.log(updatedData);
-//     await db.collection("users").doc(userEmail).update({
-//       firstName,
-//       lastName,
-//       gender,
-//       phoneNumber,
-//       weight,
-//       height,
-//     });
-//     res.send("User info updated successfully");
-//     createSendToken(updatedData, 200, req, res);
-//   } catch (error) {
-//     console.error("Error updating update info:", error);
-//     return res.status(500).json({
-//       error: "Internal Server Error",
-//     });
-//   }
-// });
