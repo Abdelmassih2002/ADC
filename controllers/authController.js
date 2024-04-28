@@ -265,9 +265,9 @@ exports.userInfo = catchAsync(async (req, res, next) => {
 });
 
 exports.updateInfo = catchAsync(async (req, res, next) => {
-  const { firstName, lastName, gender, phoneNumber, weight, height } = req.body;
+  const { firstName, lastName, gender, phoneNumber, weight, height,diabetic_type } = req.body;
   const token = req.body.token;
-
+  
   try {
     // Verify and decode the token to get user email
     const decodedToken = jwt.verify(token, process.env.JWT_SECRET);
@@ -280,6 +280,7 @@ exports.updateInfo = catchAsync(async (req, res, next) => {
       phoneNumber,
       weight,
       height,
+      diabetic_type
     };
 
     // Update user info in the database
