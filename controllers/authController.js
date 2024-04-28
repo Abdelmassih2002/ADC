@@ -37,7 +37,6 @@ const createSendToken = (user, statusCode, req, res) => {
   });
 };
 
-
 exports.signup = catchAsync(async (req, res, next) => {
   try {
     const data = ({ email, password, passwordConfirm, phoneNumber } = req.body);
@@ -295,6 +294,7 @@ exports.updateInfo = catchAsync(async (req, res, next) => {
     });
   }
 });
+
 exports.diabeticInfo = catchAsync(async (req, res, next) => {
   const { diabetic_type, diabetic_time } = req.body;
 
