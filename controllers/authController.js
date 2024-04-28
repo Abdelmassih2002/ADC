@@ -25,7 +25,9 @@ const createSendToken = (user, statusCode, req, res) => {
     user.phoneNumber,
     user.weight,
     user.height,
-    user.age
+    user.age,
+    user.diabetic_type,
+    user.diabetic_time
   );
   user.password = undefined;
   // Send the token along with the response
@@ -34,6 +36,7 @@ const createSendToken = (user, statusCode, req, res) => {
     token,
   });
 };
+
 
 exports.signup = catchAsync(async (req, res, next) => {
   try {
