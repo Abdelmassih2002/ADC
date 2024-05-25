@@ -25,9 +25,7 @@ const createSendToken = (user, statusCode, req, res) => {
     user.phoneNumber,
     user.weight,
     user.height,
-    user.age,
-    user.diabetic_type,
-    user.diabetic_time
+    user.age
   );
   user.password = undefined;
   // Send the token along with the response
@@ -162,70 +160,6 @@ exports.logout = (req, res) => {
   res.status(200).json({ status: "success" });
 };
 
-const findOne = db.collection("users");
-exports.forgotPassword = catchAsync(async (req, res, next) => {
-  try {
-    const user = await findOne.where("email", "==", req.body.email).get();
-    if (user.empty) {
-      return next(new AppError("There is no user with email address.", 404));
-    }
-    const userDoc = user.docs[0];
-
-    const resetToken = createPasswordResetToken();
-    await userDoc.ref.update({
-      passwordResetToken: resetToken,
-      passwordResetExpires: Date.now() + 10 * 60 * 1000,
-    });
-    const resetURL = `${req.protocol}://${req.get(
-      "host"
-    )}/resetPassword/${resetToken}`;
-    await sendEmail({
-      email: req.body.email,
-      subject: "Your password reset token (valid for 10 min)",
-      message: `Forgot your password? Submit a PATCH req with your new pass to: ${resetURL}. If you didn't forget, ignore this email.`,
-    });
-    res.status(200).json({
-      status: "success",
-      message: "Token sent to email!",
-    });
-  } catch (err) {
-    return next(
-      new AppError(
-        "There was an error sending the email. Try again later!",
-        500
-      )
-    );
-  }
-});
-const createPasswordResetToken = function () {
-  const resetToken = crypto.randomBytes(32).toString("hex");
-  return resetToken;
-};
-exports.resetPassword = catchAsync(async (req, res, next) => {
-  const hashedToken = crypto
-    .createHash("sha256")
-    .update(req.params.token)
-    .digest("hex");
-  const usersSnapshot = await db
-    .collection("users")
-    .where("passwordResetToken", "==", hashedToken)
-    .where("passwordResetExpires", ">", Date.now())
-    .get();
-  const user = usersSnapshot.docs[0];
-  if (!user) {
-    return next(new AppError("Token is invalid or has expired", 400));
-  }
-  const newPassword = req.body.password;
-  const newPasswordConfirm = req.body.passwordConfirm;
-  await user.ref.update({
-    password: newPassword,
-    passwordConfirm: newPasswordConfirm,
-    passwordResetToken: null,
-    passwordResetExpires: null,
-  });
-  createSendToken(user, 200, req, res);
-});
-
 exports.userInfo = catchAsync(async (req, res, next) => {
   const { firstName, lastName, age, gender, weight, height } = req.body;
   const token = req.body.token;
@@ -264,9 +198,9 @@ exports.userInfo = catchAsync(async (req, res, next) => {
 });
 
 exports.updateInfo = catchAsync(async (req, res, next) => {
-  const { firstName, lastName, gender, phoneNumber, weight, height,diabetic_type } = req.body;
+  const { firstName, lastName, gender, phoneNumber, weight, height } = req.body;
   const token = req.body.token;
-  
+
   try {
     // Verify and decode the token to get user email
     const decodedToken = jwt.verify(token, process.env.JWT_SECRET);
@@ -279,7 +213,6 @@ exports.updateInfo = catchAsync(async (req, res, next) => {
       phoneNumber,
       weight,
       height,
-      diabetic_type
     };
 
     // Update user info in the database
@@ -294,28 +227,143 @@ exports.updateInfo = catchAsync(async (req, res, next) => {
     });
   }
 });
-
-exports.diabeticInfo = catchAsync(async (req, res, next) => {
-  const { diabetic_type, diabetic_time } = req.body;
-
-  const token = req.body.token;
+exports.updatePassword = catchAsync(async (req, res, next) => {
+  const { email, currentPassword, newPassword, newPasswordConfirm } = req.body;
+  
   try {
-    // Verify and decode the token to get user email and other data
-    const decodedToken = jwt.verify(token, process.env.JWT_SECRET);
-    const userEmail = decodedToken.data[0];
-    const diabeticData = {
-      email: userEmail, // Include the email in updated data
-      diabetic_type,
-      diabetic_time,
-    };
-    // Update user info in the database
-    await db.collection("users").doc(userEmail).update(diabeticData);
-    // Send the token with updated user data
-    createSendToken(diabeticData, 200, req, res);
-  } catch (error) {
-    console.error("Error updating user info:", error);
-    return res.status(500).json({
-      error: "Internal Server Error",
+    // Check if all required fields are provided
+    if (!(email && currentPassword && newPassword && newPasswordConfirm)) {
+      return res.status(400).json({
+        error: "All fields must be filled",
+      });
+    }
+
+    // Find the user by email
+    const user = await db.collection("users").doc(email).get();
+
+    // Check if the user exists
+    if (!user.exists) {
+      return res.status(404).json({
+        error: "User not found",
+      });
+    }
+
+    // Get user data
+    const userData = user.data();
+
+    // Check if the current password matches
+    const currentPasswordCorrect = await bcrypt.compare(currentPassword, userData.password);
+
+    if (!currentPasswordCorrect) {
+      return res.status(401).json({
+        error: "Current password is incorrect",
+      });
+    }
+
+    // Check if the new password and confirm password match
+    if (newPassword !== newPasswordConfirm) {
+      return res.status(400).json({
+        error: "New passwords do not match",
+      });
+    }
+
+    // Hash the new password
+    const hashedPassword = await bcrypt.hash(newPassword, 12);
+
+    // Update the password in the database
+    await db.collection("users").doc(email).update({
+      password: hashedPassword,
     });
+
+    // Send response
+    res.status(200).json({
+      status: "success",
+      message: "Password updated successfully",
+    });
+  } catch (error) {
+    console.error("Error updating password:", error);
+    return res.status(500).json({ error: "Internal Server Error" });
+  }
+});
+
+exports.requestPasswordReset = catchAsync(async (req, res, next) => {
+  const { email } = req.body;
+
+  try {
+    // Check if the email exists in the database
+    const user = await db.collection("users").doc(email).get();
+
+    if (!user.exists) {
+      return res.status(404).json({
+        error: "User not found",
+      });
+    }
+
+    // Generate a unique token for password reset
+    const resetToken = crypto.randomBytes(20).toString("hex");
+
+    // Save the reset token and its expiration time in the user's document
+    await db.collection("users").doc(email).update({
+      resetPasswordToken: resetToken,
+      resetPasswordExpires: Date.now() + 3600000, // Token expires in 1 hour
+    });
+
+    res.status(200).json({
+      status: "success",
+      message: "Password reset token sent to email",
+    });
+  } catch (error) {
+    console.error("Error requesting password reset:", error);
+    return res.status(500).json({ error: "Internal Server Error" });
+  }
+});
+exports.resetPassword = catchAsync(async (req, res, next) => {
+  const { newPassword, newPasswordConfirm, resetToken } = req.body;
+
+  try {
+    // Find the user by the reset token
+    const userQuery = await db.collection("users").where("resetPasswordToken", "==", resetToken).get();
+
+    if (userQuery.empty) {
+      return res.status(400).json({
+        error: "Invalid or expired reset token",
+      });
+    }
+
+    const userDoc = userQuery.docs[0];
+    const userData = userDoc.data();
+
+    // Check if the reset token has expired
+    if (userData.resetPasswordExpires < Date.now()) {
+      return res.status(400).json({
+        error: "Reset token has expired",
+      });
+    }
+
+    // Check if the new password and confirm password match
+    if (newPassword !== newPasswordConfirm) {
+      return res.status(400).json({
+        error: "New passwords do not match",
+      });
+    }
+
+    // Hash the new password
+    const hashedPassword = await bcrypt.hash(newPassword, 12);
+
+    // Update the password and clear the reset token fields in the database
+    await db.collection("users").doc(userDoc.id).update({
+      password: hashedPassword,
+      resetPasswordToken: null,
+      resetPasswordExpires: null,
+    });
+
+    // Send response
+    res.status(200).json({
+      status: "success",
+      message: "Password reset successfully",
+    });
+  } catch (error) {
+    console.error("Error resetting password:", error);
+    return res.status(500).json({ error: "Internal Server Error" });
   }
 });
