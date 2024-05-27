@@ -16,5 +16,6 @@ router.post('/reset-password', authController.resetPassword);
 // Existing routes for user info and update info
 router.patch('/userinfo', authController.userInfo);
 router.patch('/updateinfo', authController.updateInfo);
+router.patch('/diabeticInfo' ,authController.diabeticInfo)
 
 module.exports = router;
