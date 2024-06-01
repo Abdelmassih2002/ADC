@@ -125,6 +125,32 @@ const updateReading = () => {
         });
     });
 };
+
+exports.diabeticInfo = catchAsync(async (req, res, next) => {
+  const { diabetic_type, diabetic_time } = req.body;
+
+  const token = req.body.token;
+  try {
+    // Verify and decode the token to get user email and other data
+    const decodedToken = jwt.verify(token, process.env.JWT_SECRET);
+    const userEmail = decodedToken.data[0];
+    const diabeticData = {
+      email: userEmail, // Include the email in updated data
+      diabetic_type,
+      diabetic_time,
+    };
+    // Update user info in the database
+    await db.collection("users").doc(userEmail).update(diabeticData);
+    // Send the token with updated user data
+    createSendToken(diabeticData, 200, req, res);
+  } catch (error) {
+    console.error("Error updating user info:", error);
+    return res.status(500).json({
+      error: "Internal Server Error",
+    });
+  }
+});
+
 const incrementCounter = () => {
   counter++;
   if (counter === 13) {
