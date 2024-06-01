@@ -27,7 +27,9 @@ const createSendToken = (user, statusCode, req, res) => {
     user.height,
     user.age,
     user.diabetic_type,
-    user.diabetic_time
+    user.diabetic_time,
+    user.firstContact,
+    user.secondContact
   );
   user.password = undefined;
   // Send the token along with the response
